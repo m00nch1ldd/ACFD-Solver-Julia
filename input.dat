@@ -4,5 +4,5 @@
 1600 0.1 1.4 0.71 300   ! Re, Mach, gamma, prandtl, T_ref
 6 5                     ! nprims, nconserv
 2 10 0.495              ! 1=E2, 2=E4, 3=C4, 4=C6, F2-F10 alpha_f
-4 20000 0.001 1000      ! RK steps, nsteps(1->20000, 2->16000), time_step(1->0.001, 2->0.002), anim_freq (every n steps)
+4 100 0.002 10         ! RK steps, nsteps quick-check profile
 1 4                     ! exec_mode parallel_mode : 0 serial, 1 parallel / 1 async tasks, 2 multi-threading, 3 distributed, 4 gpu
