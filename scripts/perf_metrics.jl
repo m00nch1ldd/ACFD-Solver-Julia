@@ -12,7 +12,13 @@ mkpath(OUTDIR)
 grid_sizes = [32, 48, 64]
 
 # serial CPU and GPU backend (if available)
-modes = Dict("cpu_serial" => (0, 0), "gpu" => (1, 4))
+modes = Dict(
+    "cpu_serial" => (0, 0),
+    "async_tasks" => (1, 1),
+    "multithreading" => (1, 2),
+    "distributed" => (1, 3),
+    "gpu" => (1, 4),
+)
 
 function rewrite_input(ni::Int, nj::Int, nk::Int, exec_mode::Int, parallel_mode::Int)
     lines = readlines(INPUT_PATH)
@@ -27,7 +33,7 @@ end
 
 function run_case(ni::Int, mode_name::String, exec_mode::Int, parallel_mode::Int)
     rewrite_input(ni, ni, ni, exec_mode, parallel_mode)
-    cmd = `julia $(MAIN_PATH)`
+    cmd = mode_name == "distributed" ? `julia -p 4 $(MAIN_PATH)` : `julia $(MAIN_PATH)`
     output = read(cmd, String)
     m = match(r"Time loop ONLY\s*:\s*([0-9.]+)", output)
     isnothing(m) && error("Could not parse loop time for mode=$mode_name, N=$ni")
@@ -51,15 +57,17 @@ end
 
 # speedup CSV
 raw = readdlm(runtime_csv, ',', String; skipstart=1)
-open(joinpath(OUTDIR, "speedup_gpu_vs_cpu.csv"), "w") do io
-    println(io, "grid_n,cpu_runtime_s,gpu_runtime_s,speedup")
+open(joinpath(OUTDIR, "speedup_vs_serial.csv"), "w") do io
+    println(io, "grid_n,mode,serial_runtime_s,mode_runtime_s,speedup")
     for n in grid_sizes
         cpu = parse(Float64, raw[(raw[:,2].=="cpu_serial") .& (raw[:,3].==string(n)), 4][1])
-        gpu = parse(Float64, raw[(raw[:,2].=="gpu") .& (raw[:,3].==string(n)), 4][1])
-        println(io, "$(n),$(cpu),$(gpu),$(cpu/gpu)")
+        for mode in ("async_tasks", "multithreading", "distributed", "gpu")
+            rt = parse(Float64, raw[(raw[:,2].==mode) .& (raw[:,3].==string(n)), 4][1])
+            println(io, "$(n),$(mode),$(cpu),$(rt),$(cpu/rt)")
+        end
     end
 end
 
 println("Wrote: ", runtime_csv)
-println("Wrote: ", joinpath(OUTDIR, "speedup_gpu_vs_cpu.csv"))
+println("Wrote: ", joinpath(OUTDIR, "speedup_vs_serial.csv"))
 println("Strong scaling (multi-GPU) requires a cluster + CUDA-aware setup and is documented in README.")
