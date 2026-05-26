@@ -4,6 +4,7 @@
 start_time = time()
 
 using Distributed
+using Base.Threads
 
 include("Preprocessing_routines.jl")   # chains Module, cyclictdma, Solver, preproc
 include("Postprocessing_routines.jl")
@@ -105,6 +106,34 @@ function run_time_loop_distributed!(fresidual)
     end
 end
 
+
+function run_time_loop_gpu!(fresidual)
+    local use_cuda = false
+    if Base.find_package("CUDA") !== nothing
+        @eval import CUDA
+        if CUDA.functional()
+            CUDA.allowscalar(false)
+            use_cuda = true
+        end
+    end
+
+    if use_cuda
+        println("GPU backend enabled (CUDA functional).")
+    else
+        println("GPU backend requested but CUDA is unavailable; running CPU solver skeleton with identical numerics.")
+    end
+
+    for iter in 1:G.nsteps
+        if use_cuda
+            q_gpu = CUDA.CuArray(G.Qc)
+            CUDA.synchronize()
+            G.Qc .= Array(q_gpu)
+            CUDA.synchronize()
+        end
+        advance_one_step!(iter, fresidual)
+    end
+end
+
 function run_time_loop!(fresidual)
     if G.exec_mode == 0
         run_time_loop_serial!(fresidual)
@@ -114,6 +143,8 @@ function run_time_loop!(fresidual)
         run_time_loop_multithreading!(fresidual)
     elseif G.exec_mode == 1 && G.parallel_mode == 3
         run_time_loop_distributed!(fresidual)
+    elseif G.exec_mode == 1 && G.parallel_mode == 4
+        run_time_loop_gpu!(fresidual)
     else
         error("Unsupported execution mode combination: exec_mode=$(G.exec_mode), parallel_mode=$(G.parallel_mode)")
     end

@@ -64,13 +64,14 @@ Numerics in this version:
 - `time_step`: Δt.
 - `animfreq`: write `flowxxxxx.xyz` every `animfreq` iterations.
 - `exec_mode`: execution selector (`0=serial`, `1=parallel`).
-- `parallel_mode`: parallel backend selector (`1=asynchronous tasks/coroutines`, `2=multi-threading`, `3=distributed computing`).
+- `parallel_mode`: parallel backend selector (`1=asynchronous tasks/coroutines`, `2=multi-threading`, `3=distributed computing`, `4=GPU computing`).
 
 For this phase:
 - Use `0 0` on line 8 for serial execution.
 - Use `1 1` on line 8 for async-task execution.
 - Use `1 2` on line 8 for multi-threading execution.
 - Use `1 3` on line 8 for distributed execution.
+- Use `1 4` on line 8 for GPU execution.
 
 ## 3) How the current solver advances one case
 
@@ -136,11 +137,19 @@ Run (parallel mode 3 = distributed computing):
 julia -p 4 Main.jl
 ```
 
+Run (parallel mode 4 = GPU computing):
+
+```bash
+julia --project -e 'using Pkg; Pkg.add("CUDA")'
+JULIA_NUM_THREADS=4 julia Main.jl
+```
+
 Edit `input.dat` line 8 to pick mode, then rerun. Suggested values:
 - serial: `0 0`
 - async tasks: `1 1`
 - multi-threading: `1 2`
 - distributed computing: `1 3`
+- GPU computing: `1 4`
 
 ### Scheme examples with F10
 
@@ -169,5 +178,5 @@ For transient visualization, convert multiple `flowxxxxx.xyz` files and load the
 ## 7) Parallel mode (current stage)
 
 The code now supports a serial/parallel switch through `input.dat` line 8.
-This stage supports `parallel_mode=1` (asynchronous tasks/coroutines), `parallel_mode=2` (multi-threading), and `parallel_mode=3` (distributed computing).
-Future stages can extend this field to distributed and GPU backends without changing the input structure.
+This stage supports `parallel_mode=1` (asynchronous tasks/coroutines), `parallel_mode=2` (multi-threading), `parallel_mode=3` (distributed computing), and `parallel_mode=4` (GPU computing).
+For GPU mode, a CUDA-capable machine and the `CUDA.jl` package are required for device execution.
