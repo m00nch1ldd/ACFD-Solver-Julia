@@ -9,7 +9,7 @@ include("Postprocessing_routines.jl")
 t_compile_done = time()
 
 println("Declared variables, allocated arrays, grid + metrics ready.")
-println("Entering main time loop...")
+println("Entering main time loop... (exec_mode=$(G.exec_mode), parallel_mode=$(G.parallel_mode))")
 
 monitor_mode = (G.restart == 1) ? "a" : "w"
 fresidual    = open("Monitor.out", monitor_mode)
@@ -17,49 +17,66 @@ fresidual    = open("Monitor.out", monitor_mode)
 # Time loop is wrapped in a function so the JIT can specialize on concrete
 # types and produce tight machine code. Running it at top-level would force
 # Julia to treat every local as a global and skip optimization.
-function run_time_loop!(fresidual)
-    for iter in 1:G.nsteps
+function advance_one_step!(iter, fresidual)
+    G.iter = iter
+    G.Qcini .= G.Qc
+    G.Qcnew .= G.Qc
 
-        G.iter = iter
-        G.Qcini .= G.Qc
-        G.Qcnew .= G.Qc
+    for step in 1:G.rk_steps
+        unsteady!(step)
 
-        # Inner Runge-Kutta loop (rk_steps usually = 4)
-        for step in 1:G.rk_steps
-            unsteady!(step)
-
-            # Filter only at the final RK stage
-            if step == 4
-                filter_i!(G.Qc, G.nconserv)
-                filter_j!(G.Qc, G.nconserv)
-                if G.grid2d != 1
-                    filter_k!(G.Qc, G.nconserv)
-                end
+        if step == 4
+            filter_i!(G.Qc, G.nconserv)
+            filter_j!(G.Qc, G.nconserv)
+            if G.grid2d != 1
+                filter_k!(G.Qc, G.nconserv)
             end
-
-            set_primitives!()
         end
 
-        # Per-step diagnostics / monitoring
-        res_vals = view(G.res, 1:G.nconserv)
+        set_primitives!()
+    end
 
-        println(G.time, "  ", G.tke, "  ", G.enstpt, "  ",
-            join(G.res[1:G.nconserv], "  "))
+    res_vals = view(G.res, 1:G.nconserv)
 
-        print(fresidual, G.time, "  ", G.tke, "  ", G.enstpt)
-        for v in res_vals
-            print(fresidual, "  ", v)
-        end
-        println(fresidual)
-        flush(fresidual)
+    println(G.time, "  ", G.tke, "  ", G.enstpt, "  ",
+        join(G.res[1:G.nconserv], "  "))
 
-        fill!(G.res, 0.0)
+    print(fresidual, G.time, "  ", G.tke, "  ", G.enstpt)
+    for v in res_vals
+        print(fresidual, "  ", v)
+    end
+    println(fresidual)
+    flush(fresidual)
 
-        if mod(iter, G.animfreq) == 0
-            output!(1)
-        end
+    fill!(G.res, 0.0)
 
-        G.time += G.time_step
+    if mod(iter, G.animfreq) == 0
+        output!(1)
+    end
+
+    G.time += G.time_step
+end
+
+function run_time_loop_serial!(fresidual)
+    for iter in 1:G.nsteps
+        advance_one_step!(iter, fresidual)
+    end
+end
+
+function run_time_loop_async_tasks!(fresidual)
+    for iter in 1:G.nsteps
+        t = Threads.@spawn advance_one_step!(iter, fresidual)
+        fetch(t)
+    end
+end
+
+function run_time_loop!(fresidual)
+    if G.exec_mode == 0
+        run_time_loop_serial!(fresidual)
+    elseif G.exec_mode == 1 && G.parallel_mode == 1
+        run_time_loop_async_tasks!(fresidual)
+    else
+        error("Unsupported execution mode combination: exec_mode=$(G.exec_mode), parallel_mode=$(G.parallel_mode)")
     end
 end
 

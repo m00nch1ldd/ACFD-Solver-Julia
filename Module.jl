@@ -26,6 +26,8 @@ mutable struct SimState
     rk_steps :: Int
     grid2d   :: Int
     viscous  :: Int
+    exec_mode :: Int
+    parallel_mode :: Int
 
     # Discretization scheme selectors
     dscheme  :: Int
@@ -150,7 +152,7 @@ const G = SimState(
     # grid dimensions
     0, 0, 0, 0, 0,
     # run control
-    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     # discretization schemes
     0, 0, 0, 0, 0,
     # discretization coefficients

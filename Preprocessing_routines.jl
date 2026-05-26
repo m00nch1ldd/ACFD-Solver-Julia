@@ -57,9 +57,26 @@ function read_input!()
         G.nsteps    = parse(Int,     line[2])
         G.time_step = parse(Float64, line[3])
         G.animfreq  = parse(Int,     line[4])
+
+        # line 8: execution mode selector
+        # exec_mode = 0 -> serial
+        # exec_mode = 1 -> parallel (parallel_mode selects backend)
+        # parallel_mode = 1 -> async tasks/coroutines
+        line = split(readline(io))
+        G.exec_mode     = parse(Int, line[1])
+        G.parallel_mode = parse(Int, line[2])
     end
 
     # derived quantities
+    if G.exec_mode == 0
+        G.parallel_mode = 0
+    elseif G.exec_mode == 1
+        if G.parallel_mode != 1
+            error("For this stage, only parallel_mode = 1 (async tasks) is implemented.")
+        end
+    else
+        error("exec_mode must be 0 (serial) or 1 (parallel).")
+    end
     G.grid2d = (G.NKmax == 1) ? 1 : 0
     G.Ptsmax = max(G.NImax, G.NJmax, G.NKmax)
 
