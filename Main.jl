@@ -33,7 +33,8 @@ println("Declared variables, allocated arrays, grid + metrics ready.")
 println("Entering main time loop... (exec_mode=$(G.exec_mode), parallel_mode=$(G.parallel_mode))")
 
 monitor_mode = (G.restart == 1) ? "a" : "w"
-fresidual    = open("Monitor.out", monitor_mode)
+mkpath(run_output_dir())
+fresidual    = open(joinpath(run_output_dir(), "Monitor.out"), monitor_mode)
 
 # Time loop is wrapped in a function so the JIT can specialize on concrete
 # types and produce tight machine code. Running it at top-level would force

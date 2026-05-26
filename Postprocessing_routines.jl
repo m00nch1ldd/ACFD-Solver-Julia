@@ -3,6 +3,25 @@
 using .CFDVars: G
 using Printf
 
+function run_output_dir()
+    if G.exec_mode == 0
+        return "serial"
+    elseif G.exec_mode == 1
+        if G.parallel_mode == 1
+            return "parallel_1"
+        elseif G.parallel_mode == 2
+            return "parallel_2"
+        elseif G.parallel_mode == 3
+            return "parallel_3"
+        elseif G.parallel_mode == 4
+            return "parallel_4"
+        else
+            return "parallel_unknown"
+        end
+    end
+    return "run_unknown"
+end
+
 # Fortran unformatted binary record writer
 function write_record(io, data)
     n = sizeof(data)
@@ -23,7 +42,8 @@ function output!(flag)
     nvars = G.nprims + G.nconserv + 9
 
     # grid file
-    open("grid.xyz", "w") do fgrid
+    mkpath(run_output_dir())
+    open(joinpath(run_output_dir(), "grid.xyz"), "w") do fgrid
         write_record(fgrid, Int32(G.nblocks))
         dims = Int32[]
         for nbl = 1:G.nblocks
@@ -42,8 +62,9 @@ function output!(flag)
 
     # flow file
     filename = (flag == 1) ? @sprintf("flow%05d.xyz", G.iter) : "flow.xyz"
+    flow_path = joinpath(run_output_dir(), filename)
 
-    open(filename, "a") do fflow
+    open(flow_path, "a") do fflow
         write_record(fflow, Int32(G.nblocks))
         dims = Int32[]
         for nbl = 1:G.nblocks
@@ -71,7 +92,7 @@ function output!(flag)
     end
 
     # restart file
-    open("restart.xyz", "w") do fflow
+    open(joinpath(run_output_dir(), "restart.xyz"), "w") do fflow
         write_record(fflow, Int32(G.nblocks))
         dims = Int32[]
         for nbl = 1:G.nblocks
@@ -89,7 +110,7 @@ function output!(flag)
         end
     end
 
-    println("Output written: ", filename)
+    println("Output written: ", flow_path)
 end
 
 # Memory is reclaimed automatically by Julia's GC.
