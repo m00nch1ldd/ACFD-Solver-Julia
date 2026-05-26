@@ -5,4 +5,4 @@
 6 5   		          ! nprims, nconserv
 2  10 0.495 	      ! 1=E2, 2=E4, 3=C4, 4=C6, F2-F10 alpha_f
 4  100 0.002 10  ! RK_steps  nsteps  time_steps  integration steps (non dimenisonal timestep) haha
-1 1                   ! exec_mode parallel_mode : 0 serial, 1 parallel / 1 async tasks
+1 2                   ! exec_mode parallel_mode : 0 serial, 1 parallel / 1 async tasks, 2 multi-threading
