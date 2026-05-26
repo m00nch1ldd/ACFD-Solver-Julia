@@ -184,9 +184,19 @@ For GPU mode, a CUDA-capable machine and the `CUDA.jl` package are required for 
 
 ## 8) Parallel README and performance evaluation
 
+Quick helper (runs all 5 execution modes once and writes a status summary):
+```bash
+julia scripts/run_all_modes.jl
+```
+Creates: `benchmarks/run_all_modes_summary.csv`.
+
+
 See `PARALLEL_README.md` for end-to-end instructions to run serial and all 4 parallel modes (async tasks, multi-threading, distributed, GPU), plus commands to generate benchmark CSV files and report-ready plots.
 
 Performance scripts included:
-- `scripts/perf_metrics.jl`: runs CPU serial and GPU modes over multiple grid sizes, writes `benchmarks/runtime_vs_grid.csv` and `benchmarks/speedup_gpu_vs_cpu.csv`.
-- `scripts/plot_metrics.jl`: generates PNG plots for CPU runtime, GPU runtime, and speedup.
+- `scripts/perf_metrics.jl`: runs serial, async-task, multithreading, distributed, and GPU modes over multiple grid sizes, writes `benchmarks/runtime_vs_grid.csv` and `benchmarks/speedup_vs_serial.csv` for serial, async-task, multithreading, distributed, and GPU modes.
+- `scripts/plot_metrics.jl`: generates PNG plots including a single combined subplot figure (`benchmarks/all_metrics_subplots.png`) and runtime panel output.
 
+
+
+Parallelization note: Kernel loops in `Solver_routines.jl` now use `Threads.@threads` for core primitive/flux computations used by all execution modes.
