@@ -113,11 +113,8 @@ Creates:
 julia scripts/plot_metrics.jl
 ```
 Creates report-ready PNGs:
-- `benchmarks/runtime_all_modes_vs_grid.png`
-- `benchmarks/speedup_async_tasks_vs_serial.png`
-- `benchmarks/speedup_multithreading_vs_serial.png`
-- `benchmarks/speedup_distributed_vs_serial.png`
-- `benchmarks/speedup_gpu_vs_serial.png`
+- `benchmarks/all_metrics_subplots.png` (single figure with runtime + all speedup panels)
+- `benchmarks/runtime_all_modes_vs_grid.png` (runtime panel, also saved separately)
 
 ## Strong scaling (multiple GPUs)
 For true multi-GPU strong scaling, run fixed grid size across 1,2,4,... GPUs on a multi-GPU node/cluster and report:
