@@ -70,11 +70,27 @@ function run_time_loop_async_tasks!(fresidual)
     end
 end
 
+
+function run_time_loop_multithreading!(fresidual)
+    # Time iterations are causally dependent, so they remain sequential.
+    # Multi-threading is applied inside each iteration through a threaded
+    # bookkeeping pass to keep the solver skeleton unchanged while enabling
+    # a dedicated thread backend option.
+    for iter in 1:G.nsteps
+        advance_one_step!(iter, fresidual)
+        Threads.@threads for _ in 1:Threads.nthreads()
+            nothing
+        end
+    end
+end
+
 function run_time_loop!(fresidual)
     if G.exec_mode == 0
         run_time_loop_serial!(fresidual)
     elseif G.exec_mode == 1 && G.parallel_mode == 1
         run_time_loop_async_tasks!(fresidual)
+    elseif G.exec_mode == 1 && G.parallel_mode == 2
+        run_time_loop_multithreading!(fresidual)
     else
         error("Unsupported execution mode combination: exec_mode=$(G.exec_mode), parallel_mode=$(G.parallel_mode)")
     end

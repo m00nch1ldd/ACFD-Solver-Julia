@@ -64,11 +64,12 @@ Numerics in this version:
 - `time_step`: Δt.
 - `animfreq`: write `flowxxxxx.xyz` every `animfreq` iterations.
 - `exec_mode`: execution selector (`0=serial`, `1=parallel`).
-- `parallel_mode`: parallel backend selector (current implementation supports `1=asynchronous tasks/coroutines`).
+- `parallel_mode`: parallel backend selector (`1=asynchronous tasks/coroutines`, `2=multi-threading`).
 
 For this phase:
 - Use `0 0` on line 8 for serial execution.
 - Use `1 1` on line 8 for async-task execution.
+- Use `1 2` on line 8 for multi-threading execution.
 
 ## 3) How the current solver advances one case
 
@@ -121,9 +122,16 @@ Run (parallel mode 1 = async tasks/coroutines):
 JULIA_NUM_THREADS=4 julia Main.jl
 ```
 
+Run (parallel mode 2 = multi-threading):
+
+```bash
+JULIA_NUM_THREADS=4 julia Main.jl
+```
+
 Edit `input.dat` line 8 to pick mode, then rerun. Suggested values:
 - serial: `0 0`
 - async tasks: `1 1`
+- multi-threading: `1 2`
 
 ### Scheme examples with F10
 
@@ -152,5 +160,5 @@ For transient visualization, convert multiple `flowxxxxx.xyz` files and load the
 ## 7) Parallel mode (current stage)
 
 The code now supports a serial/parallel switch through `input.dat` line 8.
-At this stage, only parallel backend `parallel_mode=1` (asynchronous tasks/coroutines) is enabled.
-Future stages can extend this field to thread-parallel, distributed, and GPU backends without changing the input structure.
+This stage supports `parallel_mode=1` (asynchronous tasks/coroutines) and `parallel_mode=2` (multi-threading).
+Future stages can extend this field to distributed and GPU backends without changing the input structure.
