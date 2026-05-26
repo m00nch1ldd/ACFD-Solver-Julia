@@ -727,6 +727,7 @@ function set_primitives!()
             G.Qp[i,j,k,nbl,6] = Tl
         end
     end
+    end
 end
 
 # Main solver step: build flux divergence and advance one RK sub-stage.
@@ -779,6 +780,7 @@ function unsteady!(stepl)
             G.Hflux[i,j,k,nbl,4] = -(rhl*wl*Wcont + kzl*pl)*vol
             G.Hflux[i,j,k,nbl,5] = -(rhl*El*Wcont + pl*Wcont)*vol
         end
+    end
     end
 
     # ---- (2) Viscous fluxes (only if viscous == 1) -----------------
@@ -882,6 +884,7 @@ function unsteady!(stepl)
                 G.enst[i,j,k,nbl] = 0.5*(2.0*mul/Re)*rhl*
                                     ((w_y - v_z)^2 + (w_x - u_z)^2 + (v_x - u_y)^2)
             end
+        end
         end
     end
 
