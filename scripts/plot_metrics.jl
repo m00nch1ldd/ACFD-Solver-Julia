@@ -38,7 +38,7 @@ plot!(p_runtime, grid, gpu, marker=:star5, lw=2, label="GPU")
 # Panels 2-5: speedup per mode vs serial
 speed_modes = ["async_tasks", "multithreading", "distributed", "gpu"]
 
-panels = Plot[p_runtime]
+panels = Any[p_runtime]
 for mode in speed_modes
     g, sp = mode_speedup(mode)
     p = plot(g, sp, marker=:circle, lw=2, label="$(mode) speedup",
