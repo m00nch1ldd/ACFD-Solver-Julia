@@ -58,27 +58,21 @@ function read_input!()
         G.time_step = parse(Float64, line[3])
         G.animfreq  = parse(Int,     line[4])
 
-        # line 8: execution mode selector
-        # exec_mode = 0 -> serial
-        # exec_mode = 1 -> parallel (parallel_mode selects backend)
-        # parallel_mode = 1 -> async tasks/coroutines
-        # parallel_mode = 2 -> multi-threading
-        # parallel_mode = 3 -> distributed computing
-        # parallel_mode = 4 -> GPU computing
+        # line 8: execution mode selector (single value)
+        # 0 -> serial
+        # 1 -> unified parallel mode
         line = split(readline(io))
-        G.exec_mode     = parse(Int, line[1])
-        G.parallel_mode = parse(Int, line[2])
+        G.exec_mode = parse(Int, line[1])
+        G.parallel_mode = (G.exec_mode == 1) ? 1 : 0
     end
 
     # derived quantities
     if G.exec_mode == 0
         G.parallel_mode = 0
     elseif G.exec_mode == 1
-        if !(G.parallel_mode in (1, 2, 3, 4))
-            error("parallel_mode must be 1 (async tasks), 2 (multi-threading), 3 (distributed computing), or 4 (GPU computing).")
-        end
+        G.parallel_mode = 1
     else
-        error("exec_mode must be 0 (serial) or 1 (parallel).")
+        error("line 8 mode must be 0 (serial) or 1 (unified parallel).")
     end
     G.grid2d = (G.NKmax == 1) ? 1 : 0
     G.Ptsmax = max(G.NImax, G.NJmax, G.NKmax)

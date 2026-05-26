@@ -30,7 +30,7 @@ end
 t_compile_done = time()
 
 println("Declared variables, allocated arrays, grid + metrics ready.")
-println("Entering main time loop... (exec_mode=$(G.exec_mode), parallel_mode=$(G.parallel_mode))")
+println("Entering main time loop... (mode=$(G.exec_mode))")
 
 monitor_mode = (G.restart == 1) ? "a" : "w"
 mkpath(run_output_dir())
@@ -143,16 +143,10 @@ end
 function run_time_loop!(fresidual)
     if G.exec_mode == 0
         run_time_loop_serial!(fresidual)
-    elseif G.exec_mode == 1 && G.parallel_mode == 1
-        run_time_loop_async_tasks!(fresidual)
-    elseif G.exec_mode == 1 && G.parallel_mode == 2
+    elseif G.exec_mode == 1
         run_time_loop_multithreading!(fresidual)
-    elseif G.exec_mode == 1 && G.parallel_mode == 3
-        run_time_loop_distributed!(fresidual)
-    elseif G.exec_mode == 1 && G.parallel_mode == 4
-        run_time_loop_gpu!(fresidual)
     else
-        error("Unsupported execution mode combination: exec_mode=$(G.exec_mode), parallel_mode=$(G.parallel_mode)")
+        error("Unsupported mode=$(G.exec_mode). Use 0 for serial or 1 for unified parallel mode.")
     end
 end
 
