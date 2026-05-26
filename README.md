@@ -184,6 +184,13 @@ For GPU mode, a CUDA-capable machine and the `CUDA.jl` package are required for 
 
 ## 8) Parallel README and performance evaluation
 
+Quick helper (runs all 5 execution modes once and writes a status summary):
+```bash
+julia scripts/run_all_modes.jl
+```
+Creates: `benchmarks/run_all_modes_summary.csv`.
+
+
 See `PARALLEL_README.md` for end-to-end instructions to run serial and all 4 parallel modes (async tasks, multi-threading, distributed, GPU), plus commands to generate benchmark CSV files and report-ready plots.
 
 Performance scripts included:

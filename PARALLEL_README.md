@@ -91,6 +91,13 @@ julia --project -e 'using Pkg; Pkg.add("CUDA"); Pkg.add("Plots")'
 JULIA_NUM_THREADS=4 julia Main.jl
 ```
 
+
+Quick helper (runs all 5 execution modes once and writes a status summary):
+```bash
+julia scripts/run_all_modes.jl
+```
+Creates: `benchmarks/run_all_modes_summary.csv`.
+
 ## Performance metrics workflow
 
 ### Generate CSVs
