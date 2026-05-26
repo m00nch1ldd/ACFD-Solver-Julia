@@ -180,3 +180,13 @@ For transient visualization, convert multiple `flowxxxxx.xyz` files and load the
 The code now supports a serial/parallel switch through `input.dat` line 8.
 This stage supports `parallel_mode=1` (asynchronous tasks/coroutines), `parallel_mode=2` (multi-threading), `parallel_mode=3` (distributed computing), and `parallel_mode=4` (GPU computing).
 For GPU mode, a CUDA-capable machine and the `CUDA.jl` package are required for device execution.
+
+
+## 8) Parallel README and performance evaluation
+
+See `PARALLEL_README.md` for end-to-end instructions to run serial and all 4 parallel modes (async tasks, multi-threading, distributed, GPU), plus commands to generate benchmark CSV files and report-ready plots.
+
+Performance scripts included:
+- `scripts/perf_metrics.jl`: runs CPU serial and GPU modes over multiple grid sizes, writes `benchmarks/runtime_vs_grid.csv` and `benchmarks/speedup_gpu_vs_cpu.csv`.
+- `scripts/plot_metrics.jl`: generates PNG plots for CPU runtime, GPU runtime, and speedup.
+
