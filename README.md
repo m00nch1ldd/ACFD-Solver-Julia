@@ -28,7 +28,7 @@ Numerics in this version:
 - `input.dat`  
   Runtime controls.
 
-## 2) `input.dat` (exact 7-line format)
+## 2) `input.dat` (exact 8-line format)
 
 1. `restart  nblocks`  
 2. `NImax  NJmax  NKmax`  
@@ -37,6 +37,7 @@ Numerics in this version:
 5. `nprims  nconserv`  
 6. `dscheme  fscheme  alpha_f`  
 7. `rk_steps  nsteps  time_step  animfreq`
+8. `exec_mode  parallel_mode`
 
 ### Field meaning
 
@@ -62,6 +63,12 @@ Numerics in this version:
 - `nsteps`: total physical time steps.
 - `time_step`: Δt.
 - `animfreq`: write `flowxxxxx.xyz` every `animfreq` iterations.
+- `exec_mode`: execution selector (`0=serial`, `1=parallel`).
+- `parallel_mode`: parallel backend selector (current implementation supports `1=asynchronous tasks/coroutines`).
+
+For this phase:
+- Use `0 0` on line 8 for serial execution.
+- Use `1 1` on line 8 for async-task execution.
 
 ## 3) How the current solver advances one case
 
@@ -102,13 +109,21 @@ For each block, solver writes:
 
 ## 5) Running cases and schemes
 
-Run:
+Run (serial):
 
 ```bash
 julia Main.jl
 ```
 
-Edit `input.dat` then rerun.
+Run (parallel mode 1 = async tasks/coroutines):
+
+```bash
+JULIA_NUM_THREADS=4 julia Main.jl
+```
+
+Edit `input.dat` line 8 to pick mode, then rerun. Suggested values:
+- serial: `0 0`
+- async tasks: `1 1`
 
 ### Scheme examples with F10
 
@@ -132,3 +147,10 @@ Since outputs are custom Fortran-record binary:
 3. Apply `Slice`, `Contour`, `Glyph`, `Calculator` as needed for velocity, pressure, density, vortical structures.
 
 For transient visualization, convert multiple `flowxxxxx.xyz` files and load them as a time series in ParaView.
+
+
+## 7) Parallel mode (current stage)
+
+The code now supports a serial/parallel switch through `input.dat` line 8.
+At this stage, only parallel backend `parallel_mode=1` (asynchronous tasks/coroutines) is enabled.
+Future stages can extend this field to thread-parallel, distributed, and GPU backends without changing the input structure.
