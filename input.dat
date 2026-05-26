@@ -1,0 +1,7 @@
+1 1		              ! nblocks
+30 30  30              ! NImax,NJmax,NKmax
+1  1		 	          ! testcase =1 (for tgv) =2 (for COVO), for (special random mesh=3 , sino mesh=4) !viscous
+1600 0.1 1.4 0.71 300 ! Re, Mach, gamma, prandtl, T_ref
+6 5   		          ! nprims, nconserv
+2  10 0.495 	      ! 1=E2, 2=E4, 3=C4, 4=C6, F2-F10 alpha_f
+4  100 0.002 10  ! RK_steps  nsteps  time_steps  integration steps (non dimenisonal timestep) haha
