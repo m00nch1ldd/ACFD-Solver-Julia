@@ -64,6 +64,7 @@ function read_input!()
         # parallel_mode = 1 -> async tasks/coroutines
         # parallel_mode = 2 -> multi-threading
         # parallel_mode = 3 -> distributed computing
+        # parallel_mode = 4 -> GPU computing
         line = split(readline(io))
         G.exec_mode     = parse(Int, line[1])
         G.parallel_mode = parse(Int, line[2])
@@ -73,8 +74,8 @@ function read_input!()
     if G.exec_mode == 0
         G.parallel_mode = 0
     elseif G.exec_mode == 1
-        if !(G.parallel_mode in (1, 2, 3))
-            error("parallel_mode must be 1 (async tasks), 2 (multi-threading), or 3 (distributed computing).")
+        if !(G.parallel_mode in (1, 2, 3, 4))
+            error("parallel_mode must be 1 (async tasks), 2 (multi-threading), 3 (distributed computing), or 4 (GPU computing).")
         end
     else
         error("exec_mode must be 0 (serial) or 1 (parallel).")
