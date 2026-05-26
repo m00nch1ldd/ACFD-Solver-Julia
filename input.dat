@@ -5,4 +5,4 @@
 6 5                     ! nprims, nconserv
 2 10 0.495              ! 1=E2, 2=E4, 3=C4, 4=C6, F2-F10 alpha_f
 4 100 0.002 10         ! RK steps, nsteps quick-check profile
-1 4                     ! exec_mode parallel_mode : 0 serial, 1 parallel / 1 async tasks, 2 multi-threading, 3 distributed, 4 gpu
+1 4                     ! exec_mode parallel_mode : 0 0 serial, 1 1 async, 1 2 threaded CPU, 1 3 distributed(skeleton), 1 4 GPU
