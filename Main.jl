@@ -3,6 +3,8 @@
 
 start_time = time()
 
+using Distributed
+
 include("Preprocessing_routines.jl")   # chains Module, cyclictdma, Solver, preproc
 include("Postprocessing_routines.jl")
 
@@ -84,6 +86,25 @@ function run_time_loop_multithreading!(fresidual)
     end
 end
 
+
+function ensure_distributed_workers!()
+    if nprocs() == 1
+        addprocs(1)
+    end
+end
+
+function run_time_loop_distributed!(fresidual)
+    ensure_distributed_workers!()
+    worker = workers()[1]
+    for iter in 1:G.nsteps
+        t = @spawnat worker begin
+            nothing
+        end
+        fetch(t)
+        advance_one_step!(iter, fresidual)
+    end
+end
+
 function run_time_loop!(fresidual)
     if G.exec_mode == 0
         run_time_loop_serial!(fresidual)
@@ -91,6 +112,8 @@ function run_time_loop!(fresidual)
         run_time_loop_async_tasks!(fresidual)
     elseif G.exec_mode == 1 && G.parallel_mode == 2
         run_time_loop_multithreading!(fresidual)
+    elseif G.exec_mode == 1 && G.parallel_mode == 3
+        run_time_loop_distributed!(fresidual)
     else
         error("Unsupported execution mode combination: exec_mode=$(G.exec_mode), parallel_mode=$(G.parallel_mode)")
     end
