@@ -9,6 +9,24 @@ using Base.Threads
 include("Preprocessing_routines.jl")   # chains Module, cyclictdma, Solver, preproc
 include("Postprocessing_routines.jl")
 
+
+const CUDA_BACKEND_AVAILABLE = let
+    available = false
+    if Base.find_package("CUDA") !== nothing
+        try
+            @eval import CUDA
+            available = CUDA.functional(true)
+            if available
+                CUDA.allowscalar(false)
+            end
+        catch err
+            @warn "CUDA backend initialization failed; GPU mode will use CPU path." exception=(err, catch_backtrace())
+            available = false
+        end
+    end
+    available
+end
+
 t_compile_done = time()
 
 println("Declared variables, allocated arrays, grid + metrics ready.")
@@ -108,14 +126,7 @@ end
 
 
 function run_time_loop_gpu!(fresidual)
-    local use_cuda = false
-    if Base.find_package("CUDA") !== nothing
-        @eval import CUDA
-        if CUDA.functional()
-            CUDA.allowscalar(false)
-            use_cuda = true
-        end
-    end
+    use_cuda = CUDA_BACKEND_AVAILABLE
 
     if use_cuda
         println("GPU backend enabled (CUDA functional).")
