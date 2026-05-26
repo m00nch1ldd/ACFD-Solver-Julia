@@ -1,3 +1,4 @@
+using Base.Threads
 # Explicit schemes for flow variables (second-order and fourth-order central)
 
 function discretization_i_exp!(PHI, PHID, nvars)
@@ -707,7 +708,8 @@ function set_primitives!()
     Mach = G.Mach
 
     @inbounds for nbl = 1:G.nblocks
-        for k = 1:G.NK[nbl], j = 1:G.NJ[nbl], i = 1:G.NI[nbl]
+        Threads.@threads for k = 1:G.NK[nbl]
+            for j = 1:G.NJ[nbl], i = 1:G.NI[nbl]
 
             rhl = G.Qc[i,j,k,nbl,1]
             ul  = G.Qc[i,j,k,nbl,2] / rhl
@@ -739,7 +741,8 @@ function unsteady!(stepl)
 
     # ---- (1) Inviscid fluxes ---------------------------------------
     @inbounds for nbl = 1:G.nblocks
-        for k = 1:G.NK[nbl], j = 1:G.NJ[nbl], i = 1:G.NI[nbl]
+        Threads.@threads for k = 1:G.NK[nbl]
+            for j = 1:G.NJ[nbl], i = 1:G.NI[nbl]
 
             ixl = G.ix[i,j,k,nbl]; iyl = G.iy[i,j,k,nbl]; izl = G.iz[i,j,k,nbl]
             jxl = G.jx[i,j,k,nbl]; jyl = G.jy[i,j,k,nbl]; jzl = G.jz[i,j,k,nbl]
@@ -801,7 +804,8 @@ function unsteady!(stepl)
         end
 
         @inbounds for nbl = 1:G.nblocks
-            for k = 1:G.NK[nbl], j = 1:G.NJ[nbl], i = 1:G.NI[nbl]
+            Threads.@threads for k = 1:G.NK[nbl]
+                for j = 1:G.NJ[nbl], i = 1:G.NI[nbl]
 
                 ixl = G.ix[i,j,k,nbl]; iyl = G.iy[i,j,k,nbl]; izl = G.iz[i,j,k,nbl]
                 jxl = G.jx[i,j,k,nbl]; jyl = G.jy[i,j,k,nbl]; jzl = G.jz[i,j,k,nbl]
