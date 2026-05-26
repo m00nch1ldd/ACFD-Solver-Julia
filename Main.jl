@@ -136,12 +136,6 @@ function run_time_loop_gpu!(fresidual)
     end
 
     for iter in 1:G.nsteps
-        if use_cuda
-            q_gpu = CUDA.CuArray(G.Qc)
-            CUDA.synchronize()
-            G.Qc .= Array(q_gpu)
-            CUDA.synchronize()
-        end
         advance_one_step!(iter, fresidual)
     end
 end

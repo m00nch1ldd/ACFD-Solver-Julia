@@ -64,7 +64,7 @@ Numerics in this version:
 - `time_step`: Δt.
 - `animfreq`: write `flowxxxxx.xyz` every `animfreq` iterations.
 - `exec_mode`: execution selector (`0=serial`, `1=parallel`).
-- `parallel_mode`: parallel backend selector (`1=asynchronous tasks/coroutines`, `2=multi-threading`, `3=distributed computing`, `4=GPU computing`).
+- `parallel_mode`: parallel backend selector (`1=asynchronous tasks/coroutines`, `2=multi-threading`, `3=distributed computing`, `4=GPU computing`). In current code, mode 3 is a distributed integration skeleton; mode 4 includes CUDA kernelization for primitive recovery and CPU-threaded fallback for remaining kernels.
 
 For this phase:
 - Use `0 0` on line 8 for serial execution.
@@ -191,12 +191,90 @@ julia scripts/run_all_modes.jl
 Creates: `benchmarks/run_all_modes_summary.csv`.
 
 
-See `PARALLEL_README.md` for end-to-end instructions to run serial and all 4 parallel modes (async tasks, multi-threading, distributed, GPU), plus commands to generate benchmark CSV files and report-ready plots.
-
 Performance scripts included:
 - `scripts/perf_metrics.jl`: runs serial, async-task, multithreading, distributed, and GPU modes over multiple grid sizes, writes `benchmarks/runtime_vs_grid.csv` and `benchmarks/speedup_vs_serial.csv` for serial, async-task, multithreading, distributed, and GPU modes.
 - `scripts/plot_metrics.jl`: generates PNG plots including a single combined subplot figure (`benchmarks/all_metrics_subplots.png`) and runtime panel output.
 
 
 
-Parallelization note: Kernel loops in `Solver_routines.jl` now use `Threads.@threads` for core primitive/flux computations used by all execution modes.
+Parallelization note: Kernel loops in `Solver_routines.jl` use `Threads.@threads` for core primitive/flux computations plus explicit i/j derivative loops. GPU mode also includes a CUDA kernel path for conservative-to-primitive conversion (`set_primitives!`); full end-to-end GPU kernelization of all operators is still in progress.
+
+
+## 9) Parallelization primer + practical tuning workflow
+
+### 9.1 Terminology (quick, practical)
+- **CPU core**: a physical compute unit on your CPU.
+- **Thread (Julia thread)**: a software worker that runs on CPU cores. You set this with `JULIA_NUM_THREADS`.
+- **Process**: an OS process with its own memory space. For Julia distributed mode, set this with `julia -p N`.
+- **GPU core/SM execution**: GPU executes many lightweight threads in parallel. In this repository, GPU support is currently **partial** (primitive recovery has a CUDA kernel path; all operators are not yet fully device-resident).
+- **Speedup**: `S_p = T_1 / T_p`.
+- **Parallel efficiency**: `E_p = S_p / p`.
+- **Strong scaling**: fixed problem size (same grid), vary threads/processes/GPUs.
+
+### 9.2 Parallel modes in `input.dat` line 8
+Use line 8 as:
+- `0 0` -> serial CPU
+- `1 1` -> async tasks/coroutines
+- `1 2` -> threaded CPU
+- `1 3` -> distributed (skeleton/integration path)
+- `1 4` -> GPU mode (partial CUDA path)
+
+### 9.3 Grid sizes to use (as suggested by TA)
+For meaningful scaling/speedup results, use larger TGV grids and more steps:
+- `64 64 64`
+- `96 96 96`
+- `128 128 128`
+
+Edit `input.dat`:
+- **Line 2** (`NImax NJmax NKmax`): set one of the above.
+- **Line 7** (`rk_steps nsteps time_step animfreq`): increase `nsteps` (example: `1000` or higher) so startup/transfer overhead is less dominant.
+- **Line 8** (`exec_mode parallel_mode`): choose one mode from the list above.
+
+### 9.4 How many threads/processes to try
+Start with this sweep and pick the best runtime:
+
+**Threaded CPU (`1 2`)**
+- `JULIA_NUM_THREADS=1`
+- `JULIA_NUM_THREADS=2`
+- `JULIA_NUM_THREADS=4`
+- `JULIA_NUM_THREADS=8`
+- `JULIA_NUM_THREADS=16` (if your CPU supports it)
+
+**Distributed (`1 3`)**
+- `julia -p 2 Main.jl`
+- `julia -p 4 Main.jl`
+- `julia -p 8 Main.jl` (if available)
+
+**GPU (`1 4`)**
+- run on your CUDA-capable GPU; use larger grids and higher `nsteps`.
+
+### 9.5 Commands to run and generate metrics plots
+1) Optional: run all five modes once
+```bash
+julia scripts/run_all_modes.jl
+```
+
+2) Generate runtime/speedup CSVs
+```bash
+julia scripts/perf_metrics.jl
+```
+Outputs:
+- `benchmarks/runtime_vs_grid.csv`
+- `benchmarks/speedup_vs_serial.csv`
+
+3) Generate plots
+```bash
+julia scripts/plot_metrics.jl
+```
+Outputs:
+- `benchmarks/all_metrics_subplots.png`
+- `benchmarks/runtime_all_modes_vs_grid.png`
+
+### 9.6 Recommended measurement protocol
+- For each grid (`64^3`, `96^3`, `128^3`), run each mode with multiple thread/process counts.
+- Repeat each run 3 times and average time-loop runtime.
+- Report:
+  - runtime vs grid size,
+  - speedup vs serial,
+  - efficiency vs thread/process count,
+  - strong-scaling curves at fixed grid.

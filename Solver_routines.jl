@@ -1,4 +1,20 @@
 using Base.Threads
+
+const CUDA_SOLVER_AVAILABLE = let
+    ok = false
+    if Base.find_package("CUDA") !== nothing
+        try
+            @eval import CUDA
+            ok = CUDA.functional(true)
+            if ok
+                CUDA.allowscalar(false)
+            end
+        catch
+            ok = false
+        end
+    end
+    ok
+end
 # Explicit schemes for flow variables (second-order and fourth-order central)
 
 function discretization_i_exp!(PHI, PHID, nvars)
@@ -8,7 +24,7 @@ function discretization_i_exp!(PHI, PHID, nvars)
 
     @inbounds for var = 1:nvars      
     for nbl = 1:G.nblocks
-    for k   = 1:G.NK[nbl]
+    Threads.@threads for k   = 1:G.NK[nbl]
     for j   = 1:G.NJ[nbl]
         
         NI = G.NI[nbl]
@@ -51,7 +67,7 @@ function discretization_j_exp!(PHI, PHID, nvars)
 
     @inbounds for var = 1:nvars      
     for nbl = 1:G.nblocks
-    for k   = 1:G.NK[nbl]
+    Threads.@threads for k   = 1:G.NK[nbl]
     for i   = 1:G.NI[nbl]
 
         NJ = G.NJ[nbl]
@@ -702,10 +718,52 @@ end
 
 # Convert conservative variables Qc back to primitives Qp.
 
+
+function gpu_set_primitives!(Qc, Qp, gamma, Mach)
+    CUDA.@sync CUDA.@cuda threads=256 blocks=cld(size(Qc,1)*size(Qc,2)*size(Qc,3)*size(Qc,4),256) kernel_set_primitives!(Qc, Qp, gamma, Mach)
+end
+
+function kernel_set_primitives!(Qc, Qp, gamma, Mach)
+    idx = (CUDA.blockIdx().x - 1) * CUDA.blockDim().x + CUDA.threadIdx().x
+    ni, nj, nk, nb = size(Qc,1), size(Qc,2), size(Qc,3), size(Qc,4)
+    total = ni*nj*nk*nb
+    if idx <= total
+        t = idx - 1
+        i = (t % ni) + 1
+        t = t ÷ ni
+        j = (t % nj) + 1
+        t = t ÷ nj
+        k = (t % nk) + 1
+        nbl = (t ÷ nk) + 1
+        rhl = Qc[i,j,k,nbl,1]
+        ul  = Qc[i,j,k,nbl,2] / rhl
+        vl  = Qc[i,j,k,nbl,3] / rhl
+        wl  = Qc[i,j,k,nbl,4] / rhl
+        El  = Qc[i,j,k,nbl,5] / rhl
+        Tl  = (El - 0.5*(ul^2 + vl^2 + wl^2)) * (gamma*(gamma-1.0)*Mach^2)
+        pl  = rhl*Tl / (gamma*Mach^2)
+        Qp[i,j,k,nbl,1] = rhl
+        Qp[i,j,k,nbl,2] = ul
+        Qp[i,j,k,nbl,3] = vl
+        Qp[i,j,k,nbl,4] = wl
+        Qp[i,j,k,nbl,5] = pl
+        Qp[i,j,k,nbl,6] = Tl
+    end
+    return
+end
+
 function set_primitives!()
 
     γ    = G.gamma
     Mach = G.Mach
+
+    if CUDA_SOLVER_AVAILABLE && hasproperty(Main, :CUDA_BACKEND_AVAILABLE) && Main.CUDA_BACKEND_AVAILABLE && G.exec_mode == 1 && G.parallel_mode == 4
+        Qc_d = CUDA.CuArray(G.Qc)
+        Qp_d = CUDA.CuArray(G.Qp)
+        gpu_set_primitives!(Qc_d, Qp_d, γ, Mach)
+        G.Qp .= Array(Qp_d)
+        return
+    end
 
     @inbounds for nbl = 1:G.nblocks
         Threads.@threads for k = 1:G.NK[nbl]
